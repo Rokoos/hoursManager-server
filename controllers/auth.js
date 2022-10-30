@@ -54,7 +54,6 @@ exports.signin =  (req, res) => {
             const { _id, email, userName, data, companyName, role } = user
 
             const unique = [...new Set(data.map(el => el.year))]
-            console.log('unique', unique)
     
             return res.json({user: {token,_id, userName, email, data, companyName, role}, unique})
         }) 
@@ -69,13 +68,7 @@ exports.signout =  (req, res) => {
     })
 }  
 
-exports.currentUser = async (req, res) => {
-    await User.findOne({email: req.user.email})
-    .exec((err, user) => {
-        if(err) throw new Error(err)
-        res.json(user)
-    })
-}
+
 
 
 exports.requireSignin = expressJwt({

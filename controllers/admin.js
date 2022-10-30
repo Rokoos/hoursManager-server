@@ -32,7 +32,7 @@ exports.getEmployeeWeeks = async (req, res) => {
 
     const user = await User.findOne({_id: req.params.id})
     if(!user){
-      res.status(404).res.json({message: 'Nima takiego dziada'})
+      res.status(404).res.json({message: 'Nie znaleziono użytkownika'})
     }
 
     const weeks = user.data.filter(el => el.year == req.params.year)
