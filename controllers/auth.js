@@ -1,10 +1,14 @@
 const jwt = require('jsonwebtoken')
 const expressJwt = require('express-jwt')
+const sgMail = require("@sendgrid/mail");
 require('dotenv').config()
 const User = require('../models/user')
 
 exports.signup = async (req, res) => {
-    // console.log('działa czy ni e działa')
+    console.log('req.body', req.body)
+
+    // /
+
     const userExists = await User.findOne({email: req.body.email})
 
     // console.log('userExists', userExists)
@@ -15,10 +19,53 @@ exports.signup = async (req, res) => {
         })
     }
     
-        const user = await new User(req.body)
+    const user = await new User(req.body)
         // console.log('company', company)
-        await user.save()
-    // console.log('ddududuududududududu')
+    await user.save()
+
+    sgMail.setApiKey(process.env.SENGRID_API_KEY);
+if(req.body.role === 'admin'){
+    const msg = {
+        to:  req.body.email,
+        from: "myhoursmanager@gmail.com",
+        subject: 'Witamy w Menadżerze Godzin!',
+        text: `Witaj ${req.body.userName}. Twoja firma została pomyślnie zarejestrowana w naszym serwisie.`
+        };
+    
+        sgMail.send(msg)
+        .then(response => console.log('Email to admin send...'))
+        .catch(error => console.log(error))
+}else {
+
+    const admin = await User.findOne({_id: req.body.companyName})
+
+    const msgToUser = {
+        to:  req.body.email,
+        from: "myhoursmanager@gmail.com",
+        subject: 'Witamy w Menadżerze Godzin!',
+        text: `Witaj ${req.body.userName}. Twoje konto zostało pomyślnie zarejestrowane w naszym serwisie. Możesz sie zalogować i dodawać przepracowane godziny.`
+        };
+
+     const msgToAdmin = {
+        to:  admin.email,
+        from: "myhoursmanager@gmail.com",
+        subject: `${req.body.userName} zarejestrował się w naszym serwisie.`,
+        text: `Witaj ${admin.userName}. ${req.body.userName} zarejestrował się w naszym serwisie jako pracownik Twojej firmy.`
+     }   
+    
+        sgMail.send(msgToUser)
+        .then(response => {
+            console.log('Email to user...')
+            sgMail.send(msgToAdmin)
+            .then(response => console.log('Email to admin'))
+            .catch(error => console.log(error))
+        })
+        .catch(error => console.log(error))
+}
+
+    
+    
+    
         res.json({message: 'Rejestracja zakończona powodzeniem! Możesz się zalogować.' })
     
     

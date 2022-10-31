@@ -1,4 +1,6 @@
 const User = require('../models/user')
+const sgMail = require("@sendgrid/mail");
+require('dotenv').config()
 
 exports.userById = (req, res, next, id) => {
     // console.log('id', id)
@@ -45,10 +47,38 @@ exports.handleHours = async (req, res) => {
                 .exec()
 
                 const unique = [...new Set(updatedUser.data.map(item => item.year))]
-                // console.log('uniq', unique)
-                // console.log('user',updatedUser)
 
-                res.json({updatedUser,unique})
+
+            sgMail.setApiKey(process.env.SENGRID_API_KEY);
+
+            const admin = await User.findOne({_id: req.profile.companyName})
+
+            
+                const msgToUser = {
+                    to:  req.profile.email,
+                    from: "myhoursmanager@gmail.com",
+                    subject: `Dodano godziny dla ${week} tygodnia.`,
+                    text: `Witaj ${req.profile.userName}. Pomyślnie dodano przepracowane godziny dla ${week} tygodnia ${year} roku.`
+                    };
+            
+            const msgToAdmin = {
+                    to:  admin.email,
+                    from: "myhoursmanager@gmail.com",
+                    subject: `${req.profile.userName} dodal godziny dla ${week} tygodnia.`,
+                    text: `Witaj ${admin.userName}. ${req.profile.userName} pomyślnie dodał przepracowane godziny dla ${week} tygodnia ${year} roku. Możesz je sprawdzić logując się na swoje konto.`
+                }   
+                
+            sgMail.send(msgToUser)
+            .then(response => {
+                console.log('Email to user...')
+                sgMail.send(msgToAdmin)
+                .then(response => console.log('Email to admin'))
+                .catch(error => console.log(error))
+                    })
+            .catch(error => console.log(error))
+                
+            res.json({updatedUser,unique})
+
            }else{
             res.status(400).json({error: `Dane ${week} tygodnia ${year} roku zostały juz dodane.`})
            }
