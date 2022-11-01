@@ -121,7 +121,6 @@ exports.getMonth = async (req, res) => {
     let asia = []
     let troll = []
 weeks.forEach(week  => asia.push(week.days))
-// console.log('weeks', weeks)
 
 asia.forEach(item => {
     item.forEach(el => troll.push(el))

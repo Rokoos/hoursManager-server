@@ -6,11 +6,8 @@ const User = require('../models/user')
 
 exports.signup = async (req, res) => {
 
-    // /
-
     const userExists = await User.findOne({email: req.body.email})
 
-    // console.log('userExists', userExists)
 
     if(userExists){
         return res.status(403).json({
@@ -19,7 +16,6 @@ exports.signup = async (req, res) => {
     }
     
     const user = await new User(req.body)
-        // console.log('company', company)
     await user.save()
 
     sgMail.setApiKey(process.env.SENGRID_API_KEY);
@@ -62,9 +58,6 @@ if(req.body.role === 'admin'){
         .catch(error => console.log(error))
 }
 
-    
-    
-    
         res.json({message: 'Rejestracja zakończona powodzeniem! Możesz się zalogować.' })
     
     
@@ -90,7 +83,6 @@ exports.signin =  (req, res) => {
                 })
             }
             req.user = user
-            // console.log('req.user', req.user)
 
 
             const token = jwt.sign({_id: user._id}, process.env.JWT_SECRET)
