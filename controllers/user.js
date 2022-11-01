@@ -32,21 +32,22 @@ exports.usersByCompany = (req, res) => {
 }
 
 exports.handleHours = async (req, res) => {
+
     const {year, week} = req.body
 
-           try {
-            const user = await User.findById({_id: req.params.userId})
+    try {
+        const user = await User.findById({_id: req.params.userId})
 
-           const weekExists = user.data.find(el => {
+        const weekExists = user.data.find(el => {
             return el.year == year && el.week == week
-           })
+        })
 
-           if(!weekExists){
+        if(!weekExists){
             const updatedUser = await User.findOneAndUpdate({_id: req.params.userId},{$push :{data: req.body} },
                 {new: true})
                 .exec()
 
-                const unique = [...new Set(updatedUser.data.map(item => item.year))]
+            const unique = [...new Set(updatedUser.data.map(item => item.year))]
 
 
             sgMail.setApiKey(process.env.SENGRID_API_KEY);
@@ -54,19 +55,19 @@ exports.handleHours = async (req, res) => {
             const admin = await User.findOne({_id: req.profile.companyName})
 
             
-                const msgToUser = {
-                    to:  req.profile.email,
-                    from: "myhoursmanager@gmail.com",
-                    subject: `Dodano godziny dla ${week} tygodnia.`,
-                    text: `Witaj ${req.profile.userName}. Pomyślnie dodano przepracowane godziny dla ${week} tygodnia ${year} roku.`
-                    };
+            const msgToUser = {
+                to:  req.profile.email,
+                from: "myhoursmanager@gmail.com",
+                subject: `Dodano godziny dla ${week} tygodnia.`,
+                text: `Witaj ${req.profile.userName}. Pomyślnie dodano przepracowane godziny dla ${week} tygodnia ${year} roku.`
+            };
             
             const msgToAdmin = {
-                    to:  admin.email,
-                    from: "myhoursmanager@gmail.com",
-                    subject: `${req.profile.userName} dodal godziny dla ${week} tygodnia.`,
-                    text: `Witaj ${admin.userName}. ${req.profile.userName} pomyślnie dodał przepracowane godziny dla ${week} tygodnia ${year} roku. Możesz je sprawdzić logując się na swoje konto.`
-                }   
+                to:  admin.email,
+                from: "myhoursmanager@gmail.com",
+                subject: `${req.profile.userName} dodal godziny dla ${week} tygodnia.`,
+                text: `Witaj ${admin.userName}. ${req.profile.userName} pomyślnie dodał przepracowane godziny dla ${week} tygodnia ${year} roku. Możesz je sprawdzić logując się na swoje konto.`
+            }   
                 
             sgMail.send(msgToUser)
             .then(response => {
@@ -85,9 +86,9 @@ exports.handleHours = async (req, res) => {
 
            
 
-           } catch (error) {
-            res.status(400).json({error: `Error`})
-           }
+    } catch (error) {
+        res.status(400).json({error: `Error`})
+    }
 
 }
 
@@ -149,6 +150,46 @@ exports.getUser = (req, res) => {
     req.profile.hashed_password = undefined
     req.profile.salt = undefined
     const unique = [...new Set(req.profile.data.map(el => el.year))]
-    // console.log('profile', req.profile)
     return res.json({user: req.profile,unique})
+}
+
+
+exports.deleteUser = async (req, res) => {
+
+    try {
+        const deletedUser = await User.findOneAndRemove({_id: req.params.userId}).exec()
+
+        const admin = await User.findById(deletedUser.companyName)
+
+        sgMail.setApiKey(process.env.SENGRID_API_KEY);
+        const msgToUser = {
+            to:  deletedUser.email,
+            from: "myhoursmanager@gmail.com",
+            subject: `Konto zostało pomyślnie usunięte.`,
+            text: `Twoje konto zostało pomyślnie usunięte z naszego serwisu. Do zobaczenia ponownie ${deletedUser.userName}.`
+        };
+        
+        const msgToAdmin = {
+            to:  admin.email,
+            from: "myhoursmanager@gmail.com",
+            subject: `${deletedUser.userName} usunął konto.`,
+            text: `Witaj ${admin.userName}. Użytkownik ${deletedUser.userName} usunął konto z naszego serwisu. `
+        }   
+            
+        sgMail.send(msgToUser)
+        .then(response => {
+            console.log('Email to user...')
+            sgMail.send(msgToAdmin)
+            .then(response => console.log('Email to admin'))
+            .catch(error => console.log(error))
+                })
+        .catch(error => console.log(error))
+
+        
+        res.json(deletedUser)
+    } catch (error) {
+        console.log(err)
+        res.status(400).send('Wystąpił błąd. Spróbuj ponownie później.')
+    }
+
 }
